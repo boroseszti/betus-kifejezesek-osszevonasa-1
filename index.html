@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Betűs kifejezések – összevonás</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: "Trebuchet MS", Arial, sans-serif;
+    color: #3d2b20;
+    overflow-x: hidden;
+    background:
+      linear-gradient(to bottom, #9cc7d8 0%, #c8d9d2 38%, #e9c77f 39%, #b87a3c 65%, #6d4a2e 100%);
+    position: relative;
+  }
+
+  /* Őszi táj */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(ellipse at 15% 72%, #d18b37 0 10%, transparent 11%),
+      radial-gradient(ellipse at 36% 75%, #a9502c 0 13%, transparent 14%),
+      radial-gradient(ellipse at 62% 70%, #c87c2c 0 12%, transparent 13%),
+      radial-gradient(ellipse at 86% 76%, #8e542d 0 15%, transparent 16%),
+      linear-gradient(to top, rgba(67,48,30,.45), transparent 45%);
+    z-index: -3;
+  }
+  body::after {
+    content: "";
+    position: fixed;
+    width: 180%;
+    height: 45%;
+    left: -40%;
+    bottom: -18%;
+    background: #6d482c;
+    border-radius: 50% 50% 0 0;
+    box-shadow:
+      0 -55px 0 -15px #9b6030,
+      0 -100px 0 -25px #c17a31;
+    z-index: -2;
+  }
+
+  .tree {
+    position: fixed;
+    bottom: 18%;
+    width: 18px;
+    background: #5a3826;
+    border-radius: 10px;
+    z-index: -1;
+  }
+  .tree::before, .tree::after {
+    content: "";
+    position: absolute;
+    border-radius: 50%;
+  }
+  .tree::before {
+    width: 145px; height: 145px;
+    left: -62px; top: -105px;
+    background: #9d452c;
+    box-shadow: 55px -30px 0 8px #c87929, 85px 15px 0 0 #a84d2b, -20px 22px 0 5px #d18a2e;
+  }
+  .tree::after {
+    width: 110px; height: 110px;
+    left: 30px; top: -85px;
+    background: #c36f28;
+    box-shadow: 35px 35px 0 3px #91412c;
+  }
+  .t1 { left: 6%; height: 210px; }
+  .t2 { right: 8%; height: 250px; transform: scale(.85); }
+  .t3 { left: 48%; height: 160px; transform: scale(.65); }
+
+  .container {
+    width: min(980px, 94%);
+    margin: 0 auto;
+    padding: 24px 0 35px;
+  }
+
+  header {
+    text-align: center;
+    background: rgba(255,248,232,.91);
+    border: 3px solid #9a5a2e;
+    border-radius: 24px;
+    padding: 18px 20px 15px;
+    box-shadow: 0 10px 30px rgba(55,35,20,.25);
+    backdrop-filter: blur(4px);
+  }
+  h1 {
+    margin: 0;
+    font-size: clamp(1.7rem, 4vw, 2.8rem);
+    color: #7c3f25;
+  }
+  .subtitle { margin: 5px 0 0; font-size: 1rem; }
+
+  .topbar {
+    display: grid;
+    grid-template-columns: 1fr 1.5fr 1fr;
+    gap: 12px;
+    margin: 14px 0;
+    align-items: stretch;
+  }
+  .panel {
+    background: rgba(255,250,239,.92);
+    border-radius: 17px;
+    padding: 12px;
+    box-shadow: 0 6px 18px rgba(55,35,20,.18);
+    text-align: center;
+  }
+  .panel strong { display: block; color: #713d27; margin-bottom: 6px; }
+  .levels { display: flex; gap: 7px; justify-content: center; }
+  button {
+    border: 0;
+    cursor: pointer;
+    font: inherit;
+    font-weight: bold;
+  }
+  .level {
+    padding: 8px 12px;
+    border-radius: 12px;
+    background: #ead8bc;
+    color: #633b25;
+    transition: .2s;
+  }
+  .level:hover { transform: translateY(-2px); }
+  .level.active { background: #9b522d; color: white; }
+
+  .leaves { font-size: 1.7rem; letter-spacing: 3px; white-space: nowrap; }
+  .leaf { display: inline-block; transition: opacity .3s; }
+  .leaf.lost { opacity: .15; filter: grayscale(1); }
+
+  .stats {
+    display: flex;
+    justify-content: space-around;
+    gap: 10px;
+    font-size: .95rem;
+  }
+  .stats span { font-weight: bold; color: #7c3f25; }
+
+  .game {
+    background: rgba(255,249,237,.96);
+    border-radius: 25px;
+    padding: 25px;
+    box-shadow: 0 12px 35px rgba(55,35,20,.28);
+    position: relative;
+    overflow: hidden;
+  }
+  .question-no {
+    text-align: center;
+    color: #876048;
+    font-weight: bold;
+  }
+  .instruction {
+    text-align: center;
+    font-size: 1.05rem;
+    margin: 8px 0 20px;
+  }
+  .expression {
+    min-height: 110px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-size: clamp(2rem, 6vw, 4rem);
+    font-weight: bold;
+    color: #452c20;
+    letter-spacing: 2px;
+    background: #f5e8d2;
+    border: 3px dashed #b66b35;
+    border-radius: 20px;
+    padding: 20px;
+  }
+
+  .answer-area {
+    display: flex;
+    gap: 10px;
+    max-width: 650px;
+    margin: 20px auto 10px;
+  }
+  #answer {
+    flex: 1;
+    min-width: 0;
+    border: 3px solid #c18a58;
+    border-radius: 14px;
+    padding: 13px 15px;
+    font-size: 1.35rem;
+    text-align: center;
+    outline: none;
+    background: white;
+  }
+  #answer:focus { border-color: #8d4a29; box-shadow: 0 0 0 4px rgba(141,74,41,.12); }
+  #check {
+    background: #7c3f25;
+    color: white;
+    border-radius: 14px;
+    padding: 0 24px;
+    font-size: 1.1rem;
+  }
+  #check:hover { background: #9b522d; }
+
+  .feedback {
+    min-height: 42px;
+    text-align: center;
+    font-size: 1.15rem;
+    font-weight: bold;
+    padding: 8px;
+  }
+  .correct { color: #397044; }
+  .wrong { color: #a23b2e; }
+
+  .progress {
+    height: 12px;
+    background: #eadbc8;
+    border-radius: 20px;
+    overflow: hidden;
+    margin-top: 10px;
+  }
+  #progressFill {
+    height: 100%;
+    width: 0;
+    background: linear-gradient(90deg,#6e963d,#d18a2e,#a34b2d);
+    transition: width .3s;
+  }
+
+  .restart {
+    display: block;
+    margin: 16px auto 0;
+    background: #d6a15b;
+    color: #452c20;
+    border-radius: 12px;
+    padding: 9px 17px;
+  }
+
+  /* Elrepülő falevelek */
+  .flying-leaf {
+    position: fixed;
+    left: 50%;
+    top: 55%;
+    z-index: 20;
+    font-size: 2.4rem;
+    pointer-events: none;
+    animation: fly 1.7s ease-out forwards;
+  }
+  @keyframes fly {
+    0% { transform: translate(-50%,0) rotate(0deg) scale(1); opacity: 1; }
+    35% { transform: translate(-10vw,-5vh) rotate(140deg) scale(1.1); }
+    70% { transform: translate(28vw,-12vh) rotate(290deg) scale(.85); }
+    100% { transform: translate(75vw,-3vh) rotate(520deg) scale(.3); opacity: 0; }
+  }
+
+  .wind {
+    position: fixed;
+    left: -30%;
+    top: 55%;
+    width: 160%;
+    height: 3px;
+    border-radius: 50%;
+    background: rgba(255,255,255,.75);
+    box-shadow: 0 18px 0 rgba(255,255,255,.45), 0 -14px 0 rgba(255,255,255,.35);
+    z-index: 19;
+    animation: wind 1.1s ease-out forwards;
+    pointer-events: none;
+  }
+  @keyframes wind {
+    0% { transform: translateX(-20%) scaleX(.2); opacity: 0; }
+    30% { opacity: 1; }
+    100% { transform: translateX(55%) scaleX(1); opacity: 0; }
+  }
+
+  .modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(45,30,20,.65);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+    padding: 20px;
+  }
+  .modal.show { display: flex; }
+  .modal-box {
+    background: #fff8e9;
+    border-radius: 25px;
+    padding: 30px;
+    text-align: center;
+    max-width: 520px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.35);
+  }
+  .modal-box h2 { color: #7c3f25; font-size: 2rem; margin-top: 0; }
+  .big-result { font-size: 1.3rem; line-height: 1.7; }
+  .again {
+    background: #7c3f25;
+    color: white;
+    padding: 12px 22px;
+    border-radius: 13px;
+    margin-top: 10px;
+  }
+
+  @media (max-width: 720px) {
+    .topbar { grid-template-columns: 1fr; }
+    .answer-area { flex-direction: column; }
+    #check { padding: 12px; }
+    .tree { opacity: .6; }
+  }
+</style>
+</head>
+<body>
+<div class="tree t1"></div><div class="tree t2"></div><div class="tree t3"></div>
+
+<div class="container">
+  <header>
+    <h1>🍂 Őszi algebra – levelekkel az összevonás felé</h1>
+    <p class="subtitle">Vond össze az <strong>egynemű tagokat</strong> helyesen!</p>
+  </header>
+
+  <div class="topbar">
+    <div class="panel">
+      <strong>Nehézségi szint</strong>
+      <div class="levels">
+        <button class="level active" data-level="1">1.</button>
+        <button class="level" data-level="2">2.</button>
+        <button class="level" data-level="3">3.</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <strong>Életeid</strong>
+      <div class="leaves" id="leaves">
+        <span class="leaf">🍁</span><span class="leaf">🍂</span><span class="leaf">🍁</span><span class="leaf">🍂</span><span class="leaf">🍁</span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <strong>Eredmény</strong>
+      <div class="stats">
+        <div>✓ <span id="correct">0</span></div>
+        <div>✗ <span id="wrong">0</span></div>
+        <div><span id="percent">0%</span></div>
+      </div>
+    </div>
+  </div>
+
+  <main class="game">
+    <div class="question-no" id="questionNo">1. feladat</div>
+    <p class="instruction">Írd be az egyszerűsített kifejezést! A szorzás jele: ·</p>
+    <div class="expression" id="expression">2x + 3x = ?</div>
+
+    <div class="answer-area">
+      <input id="answer" type="text" inputmode="text" autocomplete="off" placeholder="Például: 5x">
+      <button id="check">Ellenőrzöm</button>
+    </div>
+    <div class="feedback" id="feedback"></div>
+
+    <div class="progress"><div id="progressFill"></div></div>
+    <button class="restart" id="restart">🔄 Újrakezdés</button>
+  </main>
+</div>
+
+<div class="modal" id="modal">
+  <div class="modal-box">
+    <h2 id="modalTitle">Szép munka! 🍁</h2>
+    <div class="big-result" id="modalResult"></div>
+    <button class="again" id="modalAgain">Új játék</button>
+  </div>
+</div>
+
+<script>
+const levels = {
+  1: [
+    ["2x + 3x", "5x"], ["7a - 2a", "5a"], ["4b + b", "5b"], ["9y - 4y", "5y"],
+    ["3m + 6m", "9m"], ["8c - 3c", "5c"], ["5z + 2z", "7z"], ["10p - 6p", "4p"],
+    ["4k + 3k - 2k", "5k"], ["6t - 2t + t", "5t"], ["2a + 4a - a", "5a"],
+    ["9x - 3x - 2x", "4x"]
+  ],
+  2: [
+    ["3x + 5y + 2x", "5x + 5y"], ["7a - 3b + 2a", "9a - 3b"],
+    ["4m + 2n - m + 3n", "3m + 5n"], ["8x - 3y - 2x + y", "6x - 2y"],
+    ["5a + 2b - 3a + 4b", "2a + 6b"], ["9p - 4q - 2p + 7q", "7p + 3q"],
+    ["3x + 2x - 4y + y", "5x - 3y"], ["6a - 2b + a - 5b", "7a - 7b"],
+    ["2m + 3n + 4m - n", "6m + 2n"], ["10c - 3d - 4c + 2d", "6c - d"]
+  ],
+  3: [
+    ["2,5x + 1,5x - x", "3x"], ["4,2a - 1,2a + 2a", "5a"],
+    ["3x + 2y - 1,5x + 4y", "1,5x + 6y"],
+    ["5,5a - 2b - 1,5a + 3b", "4a + b"],
+    ["2x + 3y - 0,5x - y + x", "2,5x + 2y"],
+    ["7a - 2b - 3a + 0,5b", "4a - 1,5b"],
+    ["1,2m + 3n + 2,8m - n", "4m + 2n"],
+    ["5x - 1,5y - 2x + 0,5y", "3x - y"],
+    ["2,5a + 3b - 1,5a + 2b - a", "0a + 5b"],
+    ["4x - 2y + 1,5x - 0,5y", "5,5x - 2,5y"]
+  ]
+};
+
+let level = 1, lives = 5, correct = 0, wrong = 0, index = 0;
+let questions = [];
+
+const $ = id => document.getElementById(id);
+
+function shuffle(arr) {
+  return [...arr].sort(() => Math.random() - 0.5);
+}
+
+function normalize(s) {
+  return s.toLowerCase()
+    .replace(/\s+/g, '')
+    .replace(/,/g, '.')
+    .replace(/·/g, '*')
+    .replace(/−/g, '-')
+    .replace(/[()]/g, '');
+}
+
+function equivalent(a, b) {
+  const A = normalize(a), B = normalize(b);
+  if (A === B) return true;
+
+  // Biztonságos, korlátozott normalizálás az algebrai válaszokhoz:
+  // tagok szétválasztása, előjel + együttható + változó összevetése.
+  function parse(expr) {
+    expr = expr.replace(/-/g, '+-');
+    if (expr.startsWith('+')) expr = expr.slice(1);
+    const terms = expr.split('+').filter(Boolean);
+    const map = {};
+    for (let term of terms) {
+      let m = term.match(/^([+-]?(?:\d+(?:\.\d+)?)?)([a-z]*)$/);
+      if (!m) return null;
+      let coef = m[1];
+      let variable = m[2] || '';
+      if (coef === '' || coef === '+') coef = 1;
+      else if (coef === '-') coef = -1;
+      else coef = Number(coef);
+      map[variable] = (map[variable] || 0) + coef;
+    }
+    Object.keys(map).forEach(k => {
+      if (Math.abs(map[k]) < 1e-10) delete map[k];
+    });
+    return map;
+  }
+  const pa = parse(A), pb = parse(B);
+  if (!pa || !pb) return false;
+  const keys = new Set([...Object.keys(pa), ...Object.keys(pb)]);
+  for (const k of keys) if (Math.abs((pa[k]||0) - (pb[k]||0)) > 1e-10) return false;
+  return true;
+}
+
+function loadQuestion() {
+  if (index >= questions.length) {
+    questions = shuffle(levels[level]);
+    index = 0;
+  }
+  $("expression").textContent = questions[index][0] + " = ?";
+  $("questionNo").textContent = (index + 1) + ". feladat";
+  $("answer").value = "";
+  $("answer").focus();
+  $("feedback").textContent = "";
+  $("feedback").className = "feedback";
+  $("progressFill").style.width = ((index / questions.length) * 100) + "%";
+}
+
+function updateStats() {
+  $("correct").textContent = correct;
+  $("wrong").textContent = wrong;
+  const total = correct + wrong;
+  $("percent").textContent = total ? Math.round(correct / total * 100) + "%" : "0%";
+  document.querySelectorAll(".leaf").forEach((leaf, i) => {
+    leaf.classList.toggle("lost", i >= lives);
+  });
+}
+
+function leafAway() {
+  const wind = document.createElement("div");
+  wind.className = "wind";
+  document.body.appendChild(wind);
+  setTimeout(() => wind.remove(), 1200);
+
+  const leaf = document.createElement("div");
+  leaf.className = "flying-leaf";
+  leaf.textContent = Math.random() > .5 ? "🍁" : "🍂";
+  leaf.style.top = (45 + Math.random() * 20) + "%";
+  document.body.appendChild(leaf);
+  setTimeout(() => leaf.remove(), 1800);
+}
+
+function checkAnswer() {
+  const value = $("answer").value.trim();
+  if (!value) {
+    $("feedback").textContent = "Írd be a választ!";
+    $("feedback").className = "feedback wrong";
+    return;
+  }
+
+  const expected = questions[index][1];
+  if (equivalent(value, expected)) {
+    correct++;
+    $("feedback").textContent = "✓ Helyes! A levelek büszkén maradnak a fán. 🍂";
+    $("feedback").className = "feedback correct";
+    updateStats();
+    index++;
+    setTimeout(loadQuestion, 750);
+  } else {
+    wrong++;
+    lives--;
+    leafAway();
+    $("feedback").innerHTML = "✗ Nem ez lett. <span style='font-weight:normal'>A helyes összevonás: <strong>" + expected + "</strong></span>";
+    $("feedback").className = "feedback wrong";
+    updateStats();
+    if (lives <= 0) {
+      setTimeout(endGame, 900);
+    } else {
+      setTimeout(() => {
+        index++;
+        loadQuestion();
+      }, 1200);
+    }
+  }
+}
+
+function endGame() {
+  const total = correct + wrong;
+  const pct = total ? Math.round(correct / total * 100) : 0;
+  $("modalTitle").textContent = lives <= 0 ? "Elfújta a szél! 🍂" : "Szép munka! 🍁";
+  $("modalResult").innerHTML =
+    "Nehézségi szint: <strong>" + level + ".</strong><br>" +
+    "Helyes válaszok: <strong>" + correct + "</strong><br>" +
+    "Hibás válaszok: <strong>" + wrong + "</strong><br>" +
+    "Helyes válaszok aránya: <strong>" + pct + "%</strong>";
+  $("modal").classList.add("show");
+}
+
+function restart() {
+  lives = 5; correct = 0; wrong = 0; index = 0;
+  questions = shuffle(levels[level]);
+  $("modal").classList.remove("show");
+  updateStats();
+  loadQuestion();
+}
+
+document.querySelectorAll(".level").forEach(btn => {
+  btn.addEventListener("click", () => {
+    level = Number(btn.dataset.level);
+    document.querySelectorAll(".level").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    restart();
+  });
+});
+
+$("check").addEventListener("click", checkAnswer);
+$("answer").addEventListener("keydown", e => {
+  if (e.key === "Enter") checkAnswer();
+});
+$("restart").addEventListener("click", restart);
+$("modalAgain").addEventListener("click", restart);
+
+questions = shuffle(levels[level]);
+updateStats();
+loadQuestion();
+</script>
+</body>
+</html>
